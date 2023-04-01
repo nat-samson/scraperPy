@@ -8,6 +8,7 @@ BASE_URL = 'http://www.imdb.com/title/'
 MAX_GENRES = 2
 MAX_CAST = 3
 MAX_LANGUAGES = 2
+MAX_COUNTRIES = 2
 
 
 # TODO improve this to not be bound to csv implementation
@@ -114,7 +115,26 @@ def get_url(movie):
 
 
 def process(movie):
-    pass
+    # obtain data for all the fields needed
+    movie_dict = dict()
+
+    # todo: work through the selected fields only
+    movie_dict['title'] = get_title(movie)
+    movie_dict['director'] = get_director(movie)
+    movie_dict['genre'] = get_genres(movie, MAX_GENRES)
+    movie_dict['year'] = get_year(movie)
+    movie_dict['synopsis'] = get_synopsis(movie)
+    # movie_dict['outline'] = movie['plot outline']
+    movie_dict['cast'] = get_cast(movie, MAX_CAST)
+    movie_dict['country'] = get_countries(movie, MAX_COUNTRIES)
+    movie_dict['language'] = get_language(movie, MAX_LANGUAGES)
+    movie_dict['runtime'] = get_runtime(movie)
+    movie_dict['rating'] = get_rating(movie)
+    movie_dict['imdb_id'] = get_imdb_id(movie)
+    movie_dict['url'] = get_url(movie)
+
+    print('Retrieved:', movie_dict['title'])
+    return movie_dict
 
 
 def export(film_data, fields):
@@ -135,8 +155,8 @@ def main():
     movie_objs = map(get_movie, ids)
     data = [process(movie) for movie in movie_objs if movie is not None]
 
-    fields = ['title', 'director', 'genre', 'synopsis', 'year', 'rating', 'url', 'imdb_id', 'cast', 'runtime',
-              'country', 'language']
+    fields = ['title', 'director', 'genre', 'year', 'synopsis', 'cast', 'country', 'language', 'runtime', 'rating',
+              'imdb_id', 'url']
 
     export(data, fields)
 
