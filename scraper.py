@@ -118,7 +118,13 @@ def get_url(movie):
 
 
 def export(film_data, fields):
-    pass
+    with open('output.csv', 'w', newline='') as csv_output:
+        writer = csv.DictWriter(csv_output, fieldnames=fields)
+
+        writer.writeheader()
+        # film data is a list of dictionaries, might be easier to just use lists
+        for film in film_data:
+            writer.writerow(film)
 
 
 def main():
