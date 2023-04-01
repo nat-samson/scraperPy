@@ -29,10 +29,6 @@ def extract_ids(raw_input):
     return ids
 
 
-def process(movie):
-    pass
-
-
 def get_movie(imdb_id):
     """ Return IMDb object if ID is valid, otherwise return None. """
     try:
@@ -117,6 +113,10 @@ def get_url(movie):
     return BASE_URL + get_imdb_id(movie)
 
 
+def process(movie):
+    pass
+
+
 def export(film_data, fields):
     with open('output.csv', 'w', newline='') as csv_output:
         writer = csv.DictWriter(csv_output, fieldnames=fields)
@@ -128,7 +128,17 @@ def export(film_data, fields):
 
 
 def main():
-    pass
+    # get IMDb IDs
+    ids = extract_ids('imdb.csv')
+
+    # get desired data from IMDb
+    movie_objs = map(get_movie, ids)
+    data = [process(movie) for movie in movie_objs if movie is not None]
+
+    fields = ['title', 'director', 'genre', 'synopsis', 'year', 'rating', 'url', 'imdb_id', 'cast', 'runtime',
+              'country', 'language']
+
+    export(data, fields)
 
 
 if __name__ == '__main__':
