@@ -1,3 +1,6 @@
+import csv
+import re
+
 from imdb import Cinemagoer, IMDbError
 
 ia = Cinemagoer()
@@ -7,8 +10,23 @@ MAX_CAST = 3
 MAX_LANGUAGES = 2
 
 
+# TODO improve this to not be bound to csv implementation
+# perhaps create version that turns csv into just text, then another def that identifies all the csvs
 def extract_ids(raw_input):
-    pass
+    pattern = 'tt(\d+)'
+    ids = []
+
+    with open(raw_input, newline='') as csv_input:
+        reader = csv.reader(csv_input)
+
+        for row in reader:
+            imdb_id = re.search(pattern, ''.join(row))
+            if imdb_id is None:
+                print('Invalid ID:', row)
+            else:
+                ids.append(imdb_id.group(1))
+
+    return ids
 
 
 def process(movie):
