@@ -1,9 +1,10 @@
 import tkinter as tk
 from pathlib import PurePath
-from tkinter import filedialog as fd
-from tkinter import ttk, scrolledtext, END
+from tkinter import filedialog as fd, ttk, scrolledtext, END, messagebox
 
 # configs
+from scraper import extract_ids, read_csv
+
 LARGE_FONT = ('Verdana', 12)
 ICON = None  #'something.ico'
 TITLE = 'ScraperApp'
@@ -27,24 +28,25 @@ class ScraperApp(tk.Tk):
         self.frames = {}
 
         # register all pages here
-        for f in (StartPage, PageOne, PageTwo):
+        for f in (InputPage, ConfigPage, PageTwo):
             frame = f(container, self)
             self.frames[f] = frame
             frame.grid(row=0, column=0, sticky='nsew')
 
-        self.show_frame(StartPage)
+        self.show_frame(InputPage)
 
     def show_frame(self, controller):
         frame = self.frames[controller]
         frame.tkraise()
 
 
-class StartPage(tk.Frame):
+class InputPage(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
 
         self.filename = tk.StringVar(value='')
         self.path = None
+        self.controller = controller
 
         # LABELFRAME
         lf = tk.LabelFrame(self, text='Choose data source')
@@ -97,47 +99,114 @@ class StartPage(tk.Frame):
         self.cont_button.config(state='normal')
 
     def cont_check(self, path, txt):
-        # pastebox is selected
+        # TODO simplify this once Continue button is auto-enabled/disabled
+        # text radio is selected
         if self.radio.get():
-            if txt.compare("end-1c", "==", "1.0"):
+            if txt.compare('end-1c', '==', '1.0'):
                 print('No text provided!')
             else:
                 print('Processing the text!')
-                # function to check there is at least one possible IMDBid, if so proceed.
-        # open csv is selected
+                ids = extract_ids(txt.get('1.0', 'end-1c'))
+                self.warn_or_continue(ids)
+
+        # open csv radio is selected
         else:
             if path:
                 print('Opening', path)
-                # run same function as above
+                ids = read_csv(path)
+                self.warn_or_continue(ids)
             else:
                 print('No file is set!')
 
+    def warn_or_continue(self, ids):
+        """ If potential IDs are submitted, continue. Else warn the user. """
+        if ids:
+            self.controller.show_frame(ConfigPage)
+        else:
+            messagebox.showwarning(title='No IMDb IDs', message='No potential IMDb IDs identified.', parent=self)
+
+    def enable_continue(self):
+        self.cont_button.configure(state='normal')
+        self.cont_button.update()
+
+    def disable_continue(self):
+        self.cont_button.configure(state='disabled')
+        self.cont_button.update()
 
     def clear(self, textbox):
         """ Reset the page """
+        # todo a better way to do this?
         print('clear')
         self.r1.invoke()
         self.filename.set('')
-        # todo a better way to do this?
         self.label2.config(text=self.filename.get())
         self.path = None
         textbox.delete(1.0, END)
+        self.cont_button.config(state='disabled')
+
+
+class ConfigPage(tk.Frame):
+    def __init__(self, parent, controller, **kw):
+        super().__init__(parent)
+
+        # LABELFRAME
+        lf = tk.LabelFrame(self, text='Select the film data to extract')
+        lf.pack(padx=15, pady=15, fill='both', expand='true')
+
+        # Checkboxes
+        cbs = []
+        cb_text = ['title', 'director', 'genre', 'year', 'synopsis', 'cast', 'country', 'language', 'runtime', 'IMDb score',
+              'imdb_id', 'url']
+
+        cbs_per_row = 3
+        for i, t in enumerate(cb_text):
+            cb = tk.Checkbutton(lf, text=t)
+            cbs.append(cb)
+            cb.select()
+            row, column = divmod(i, cbs_per_row)
+            cbs[i].grid(row=row, column=column, sticky='w')
+
+        lf_config = tk.LabelFrame(self, text='Configure the film data')
+        lf_config.pack(padx=15, pady=15, fill='both', expand='true')
+
+        max_cast = tk.IntVar(lf_config, value=3)
+        max_cast_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_cast, label='Max cast:', orient='horizontal')
+        max_cast_sb.grid(row=0, column=0)
+
+        max_genres = tk.IntVar(lf_config, value=3)
+        max_genres_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_genres, label='Max genres:', orient='horizontal')
+        max_genres_sb.grid(row=0, column=1)
+
+        max_langs = tk.IntVar(lf_config, value=2)
+        max_langs_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_langs, label='Max languages:',
+                                 orient='horizontal')
+        max_langs_sb.grid(row=0, column=2)
+
+        max_countries = tk.IntVar(lf_config, value=3)
+        max_countries_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_countries, label='Max countries:',
+                                 orient='horizontal')
+        max_countries_sb.grid(row=0, column=3)
+
+        # lower buttons, in their own frame
+        buttons_frame = tk.Frame(lf)
+        buttons_frame.grid(row=3, column=0, columnspan=3, sticky='nsew')
+
+        self.back_button = tk.Button(buttons_frame, text='Back', command=lambda: controller.show_frame(InputPage))
+        self.back_button.pack(side='left', padx=10, pady=10)
+
+        self.extract_button = tk.Button(buttons_frame, text='Extract!', command=self.extract)
+        self.extract_button.pack(side='right', padx=10, pady=10)
+
+    def extract(self):
+        print('Extract the data!')
+
+    def save_file(self):
+        filename = fd.asksaveasfilename(parent=self)
+        print(filename)
+        # run the export function here
 
 
 # PLACEHOLDERS FOR FURTHER PAGES
-
-class PageOne(tk.Frame):
-    def __init__(self, parent, controller, **kw):
-        super().__init__(parent)
-        label = tk.Label(self, text='Page One', font=LARGE_FONT)
-        label.pack(pady=10, padx=10)
-
-        button1 = ttk.Button(self, text='Back', command=lambda: controller.show_frame(StartPage))
-        button1.pack()
-
-        button2 = ttk.Button(self, text='Page Two', command=lambda: controller.show_frame(PageTwo))
-        button2.pack()
-
 
 class PageTwo(tk.Frame):
     def __init__(self, parent, controller, **kw):
@@ -145,10 +214,10 @@ class PageTwo(tk.Frame):
         label = tk.Label(self, text='Page Two', font=LARGE_FONT)
         label.pack(pady=10, padx=10)
 
-        button1 = ttk.Button(self, text='Back', command=lambda: controller.show_frame(StartPage))
+        button1 = ttk.Button(self, text='Back', command=lambda: controller.show_frame(InputPage))
         button1.pack()
 
-        button2 = ttk.Button(self, text='Page One', command=lambda: controller.show_frame(PageOne))
+        button2 = ttk.Button(self, text='Page One', command=lambda: controller.show_frame(ConfigPage))
         button2.pack()
 
 
@@ -158,10 +227,10 @@ class PageThree(tk.Frame):
         label = tk.Label(self, text='Page Three', font=LARGE_FONT)
         label.pack(pady=10, padx=10)
 
-        button1 = ttk.Button(self, text='Back', command=lambda: controller.show_frame(StartPage))
+        button1 = ttk.Button(self, text='Back', command=lambda: controller.show_frame(InputPage))
         button1.pack()
 
-        button2 = ttk.Button(self, text='Page One', command=lambda: controller.show_frame(PageOne))
+        button2 = ttk.Button(self, text='Page One', command=lambda: controller.show_frame(ConfigPage))
         button2.pack()
 
 
