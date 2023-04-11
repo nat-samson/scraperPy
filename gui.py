@@ -2,11 +2,10 @@ import tkinter as tk
 from pathlib import PurePath
 from tkinter import filedialog as fd, ttk, scrolledtext, END, messagebox
 
-# configs
-from scraper import extract_ids, read_csv
+from scraper import extract_ids, read_csv, main
 
 LARGE_FONT = ('Verdana', 12)
-ICON = None  #'something.ico'
+ICON = 'icon.icns'
 TITLE = 'ScraperApp'
 
 
@@ -16,7 +15,7 @@ class ScraperApp(tk.Tk):
 
         # TODO set icon
         tk.Tk.wm_title(self, TITLE)
-        #tk.Tk.iconbitmap(self, default=ICON)
+        #tk.Tk.iconbitmap(self, bitmap=ICON)
         #self.geometry('300x150')
         self.minsize(380, 320)
 
@@ -25,6 +24,7 @@ class ScraperApp(tk.Tk):
         container.rowconfigure(0, weight=1)
         container.columnconfigure(0, weight=1)
 
+        # contains the various pages that make up the GUI
         self.frames = {}
 
         # register all pages here
@@ -36,6 +36,7 @@ class ScraperApp(tk.Tk):
         self.show_frame(InputPage)
 
     def show_frame(self, controller):
+        """ Switches a new frame of the GUI into view. """
         frame = self.frames[controller]
         frame.tkraise()
 
@@ -47,41 +48,93 @@ class InputPage(tk.Frame):
         self.filename = tk.StringVar(value='')
         self.path = None
         self.controller = controller
+        self.save_loc = tk.StringVar(value='')
 
-        # LABELFRAME
-        lf = tk.LabelFrame(self, text='Choose data source')
-        lf.pack(padx=15, pady=15, fill='both', expand='true')
-        lf.grid_rowconfigure(2, weight=1)
+        # LF: Input Data
+        lf_input = tk.LabelFrame(self, text='Choose data source')
+        lf_input.pack(padx=15, pady=10, fill='both', expand='true')
+        lf_input.grid_rowconfigure(2, weight=1)
         #lf.grid_columnconfigure(0, weight=1)
-        lf.grid_columnconfigure(1, weight=1)
+        lf_input.grid_columnconfigure(1, weight=1)
 
-        # RADIOS
+        # Radios
         self.radio = tk.IntVar()
-        self.r1 = tk.Radiobutton(lf, text='Import CSV:', variable=self.radio, value=0)
-        self.r2 = tk.Radiobutton(lf, text='Paste below:', variable=self.radio, value=1)
+        self.r1 = tk.Radiobutton(lf_input, text='Import CSV:', variable=self.radio, value=0)
+        self.r2 = tk.Radiobutton(lf_input, text='Paste below:', variable=self.radio, value=1)
 
         self.r1.grid(row=0, column=0, ipady=5, padx=12, sticky='w')
         self.r2.grid(row=1, column=0, ipady=5, padx=12, sticky='w')
 
-        open_csv_button = tk.Button(lf, text='Open CSV', command=self.select_file)
+        open_csv_button = tk.Button(lf_input, text='Open CSV', command=self.select_file)
         open_csv_button.grid(row=0, column=1, padx=5, sticky='w')
 
-        self.label2 = tk.Label(lf, text=self.filename.get())
-        self.label2.grid(row=0, column=2, sticky='e', padx=10)
+        self.open_loc = tk.Label(lf_input, text=self.filename.get())
+        self.open_loc.grid(row=0, column=2, sticky='e', padx=10)
 
-        # text input
-        txt = scrolledtext.ScrolledText(lf, width=50, height=10, wrap='word', borderwidth='2', relief='groove')
-        txt.grid(row=2, column=0, columnspan=3, padx=10, sticky='nsew')
+        # Text Input
+        txt = scrolledtext.ScrolledText(lf_input, width=50, height=8, wrap='word', borderwidth='2', relief='groove')
+        txt.grid(row=2, column=0, columnspan=3, padx=10, pady=5, sticky='nsew')
 
-        # lower buttons, in their own frame
-        buttons_frame = tk.Frame(lf)
-        buttons_frame.grid(row=3, column=0, columnspan=3, sticky='nsew')
+        # LF: Select Data
+        lf_select = tk.LabelFrame(self, text='Select data to extract')
+        lf_select.pack(padx=15, pady=10, fill='both', expand='false')
+        lf_select.grid_columnconfigure(0, weight=1)
+        lf_select.grid_columnconfigure(1, weight=1)
+        lf_select.grid_columnconfigure(2, weight=1)
 
-        self.clear_button = tk.Button(buttons_frame, text='Clear', command=lambda: self.clear(txt))
-        self.clear_button.pack(side='left', padx=10, pady=10)
+        # Checkboxes
+        cbs = []
+        cb_text = ['title', 'director', 'genre', 'year', 'synopsis', 'cast', 'country', 'language', 'runtime',
+                   'IMDb score',
+                   'imdb_id', 'url']
 
-        self.cont_button = tk.Button(buttons_frame, text='Continue', command=lambda: self.cont_check(self.path, txt))
-        self.cont_button.pack(side='right', padx=10, pady=10)
+        cbs_per_row = 3
+        for i, t in enumerate(cb_text):
+            cb = tk.Checkbutton(lf_select, text=t)
+            cbs.append(cb)
+            cb.select()
+            row, column = divmod(i, cbs_per_row)
+            cbs[i].grid(row=row, column=column, sticky='w')
+
+        # LF: Configure Data
+        lf_config = tk.LabelFrame(self, text='Configure data')
+        lf_config.pack(padx=15, pady=10, fill='both', expand='false')
+
+        max_cast = tk.IntVar(lf_config, value=3)
+        max_cast_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_cast, label='Max cast:', orient='horizontal')
+        max_cast_sb.pack(side='left', padx=5, pady=5, fill='both', expand='true')
+
+        max_genres = tk.IntVar(lf_config, value=3)
+        max_genres_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_genres, label='Max genres:',
+                                 orient='horizontal')
+        max_genres_sb.pack(side='left', padx=5, pady=5, fill='both', expand='true')
+
+        max_langs = tk.IntVar(lf_config, value=2)
+        max_langs_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_langs, label='Max languages:',
+                                orient='horizontal')
+        max_langs_sb.pack(side='left', padx=5, pady=5, fill='both', expand='true')
+
+        max_countries = tk.IntVar(lf_config, value=3)
+        max_countries_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_countries, label='Max countries:',
+                                    orient='horizontal')
+        max_countries_sb.pack(side='left', padx=5, pady=5, fill='both', expand='true')
+
+        # LF: Save Location
+        lf_save = tk.LabelFrame(self, text='Set save location')
+        lf_save.pack(padx=15, pady=10, fill='both', expand='false')
+
+        tk.Button(lf_save, text='Choose...', command=self.get_save_path).pack(side='left')
+        tk.Label(lf_save, textvariable=self.save_loc).pack(side='right')
+
+        # Navigation Buttons
+        buttons_frame = tk.Frame(self)
+        buttons_frame.pack(padx=15, pady=10, fill='both', expand='false')
+
+        self.reset_button = tk.Button(buttons_frame, text='Reset', command=lambda: self.reset(txt, cbs))
+        self.reset_button.pack(side='left')
+
+        self.extract_button = tk.Button(buttons_frame, text='Extract...', command=lambda: self.validate_input(self.path, txt))
+        self.extract_button.pack(side='right')
 
     def select_file(self):
         filetypes = [('CSV files', '*.csv')]
@@ -90,59 +143,62 @@ class InputPage(tk.Frame):
         filename = PurePath(self.path).name
         self.filename.set(value=filename)
         print(self.filename.get())
-        self.label2.config(text=self.filename.get())
+        self.open_loc.config(text=self.filename.get())
 
         # ensure the relevant radio is selected
         self.r1.invoke()
 
         # can sort the state management later
-        self.cont_button.config(state='normal')
+        self.extract_button.config(state='normal')
 
-    def cont_check(self, path, txt):
-        # TODO simplify this once Continue button is auto-enabled/disabled
-        # text radio is selected
+    def validate_input(self, path, txt):
+        """ Ensure that the user has submitted some data, if so, begin the processing. """
+        # Text radio is selected
         if self.radio.get():
-            if txt.compare('end-1c', '==', '1.0'):
-                print('No text provided!')
-            else:
-                print('Processing the text!')
-                ids = extract_ids(txt.get('1.0', 'end-1c'))
-                self.warn_or_continue(ids)
+            ids = extract_ids(txt.get('1.0', 'end-1c'))
+            self.process_ids(ids)
 
-        # open csv radio is selected
+        # CSV radio is selected
         else:
             if path:
-                print('Opening', path)
                 ids = read_csv(path)
-                self.warn_or_continue(ids)
+                self.process_ids(ids)
             else:
-                print('No file is set!')
+                messagebox.showwarning(title='No IMDb IDs', message='No CSV specified.', parent=self)
 
-    def warn_or_continue(self, ids):
-        """ If potential IDs are submitted, continue. Else warn the user. """
+    def process_ids(self, ids):
+        """ If potential IDs are submitted, process them. Else warn the user. """
         if ids:
-            self.controller.show_frame(ConfigPage)
+            # TODO sort out specifying the fields
+            fields = []
+            save_path = self.save_loc.get()
+            if not save_path:
+                save_path = self.get_save_path()
+            if save_path:
+                main(ids, fields, save_path)
         else:
             messagebox.showwarning(title='No IMDb IDs', message='No potential IMDb IDs identified.', parent=self)
 
-    def enable_continue(self):
-        self.cont_button.configure(state='normal')
-        self.cont_button.update()
+    def get_save_path(self):
+        save_path = fd.asksaveasfilename()
+        self.save_loc.set(save_path)
+        return save_path
 
-    def disable_continue(self):
-        self.cont_button.configure(state='disabled')
-        self.cont_button.update()
-
-    def clear(self, textbox):
+    def reset(self, textbox, cbs):
         """ Reset the page """
         # todo a better way to do this?
         print('clear')
         self.r1.invoke()
         self.filename.set('')
-        self.label2.config(text=self.filename.get())
+        self.open_loc.config(text=self.filename.get())
         self.path = None
         textbox.delete(1.0, END)
-        self.cont_button.config(state='disabled')
+        self.extract_button.config(state='disabled')
+
+        for cb in cbs:
+            cb.select()
+
+        #TODO reset the scales
 
 
 class ConfigPage(tk.Frame):
@@ -150,7 +206,7 @@ class ConfigPage(tk.Frame):
         super().__init__(parent)
 
         # LABELFRAME
-        lf = tk.LabelFrame(self, text='Select the film data to extract')
+        lf = tk.LabelFrame(self, text='Select data to extract')
         lf.pack(padx=15, pady=15, fill='both', expand='true')
 
         # Checkboxes
