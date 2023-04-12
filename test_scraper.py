@@ -3,11 +3,11 @@ from unittest import TestCase
 from imdb import Cinemagoer
 
 from scraper import extract_ids, get_title, get_movie, get_year, get_countries, get_director, get_cast, get_runtime, \
-    get_genres, get_rating, get_language
+    get_genres, get_rating, get_language, read_csv
 
-ia = Cinemagoer()
-movie_id = '0133093'
-movie = ia.get_movie(movie_id)
+#ia = Cinemagoer()
+#movie_id = '0133093'
+#movie = ia.get_movie(movie_id)
 
 
 class Test(TestCase):
@@ -85,3 +85,11 @@ class Test(TestCase):
 
     def test_process(self):
         self.fail()
+
+    def test_read_csv(self):
+        path = 'test.csv'
+        actual = read_csv(path)
+        expected = {'3011960', '2463288', '1615147', '4440644'}
+
+        self.assertSetEqual(expected, actual)
+

@@ -11,23 +11,24 @@ MAX_LANGUAGES = 2
 MAX_COUNTRIES = 2
 
 
-# TODO improve this to not be bound to csv implementation
-# perhaps create version that turns csv into just text, then another def that identifies all the csvs
-def extract_ids(raw_input):
-    pattern = 'tt(\d+)'
-    ids = []
+def read_csv(path):
+    """ Identify all potential IMDb IDs from anywhere within a CSV, return them as a set. """
+    ids = set()
 
-    with open(raw_input, newline='') as csv_input:
+    with open(path, newline='') as csv_input:
         reader = csv.reader(csv_input)
 
         for row in reader:
-            imdb_id = re.search(pattern, ''.join(row))
-            if imdb_id is None:
-                print('Invalid ID:', row)
-            else:
-                ids.append(imdb_id.group(1))
+            matches = extract_ids(''.join(row))
+            ids.update(matches)
 
     return ids
+
+
+def extract_ids(text):
+    """ Identify all potential IMDb IDs from a block of text, return them as a set. """
+    pattern = 'tt(\d+)'
+    return set(re.findall(pattern, text))
 
 
 def get_movie(imdb_id):
@@ -36,6 +37,10 @@ def get_movie(imdb_id):
         return ia.get_movie(imdb_id)
     except IMDbError:
         print(f'Invalid ID: {imdb_id}')
+
+
+def get_movies(ids):
+    return map(get_movie, ids)
 
 
 def get_title(movie):
@@ -137,8 +142,8 @@ def process(movie):
     return movie_dict
 
 
-def export(film_data, fields):
-    with open('output.csv', 'w', newline='') as csv_output:
+def export(film_data, fields, save_path='output.csv'):
+    with open(save_path, 'w', newline='') as csv_output:
         writer = csv.DictWriter(csv_output, fieldnames=fields)
 
         writer.writeheader()
@@ -147,18 +152,23 @@ def export(film_data, fields):
             writer.writerow(film)
 
 
-def main():
-    # get IMDb IDs
-    ids = extract_ids('imdb.csv')
+def update_progress():
+    """ Let the view know how far through the scraping process we are. """
+    return
+
+
+def main(raw_ids, fields, save_path):
+    # ex
+    #ids = read_csv(path)
 
     # get desired data from IMDb
-    movie_objs = map(get_movie, ids)
+    movie_objs = get_movies(raw_ids)
     data = [process(movie) for movie in movie_objs if movie is not None]
 
     fields = ['title', 'director', 'genre', 'year', 'synopsis', 'cast', 'country', 'language', 'runtime', 'rating',
               'imdb_id', 'url']
 
-    export(data, fields)
+    export(data, fields, save_path)
 
 
 if __name__ == '__main__':
