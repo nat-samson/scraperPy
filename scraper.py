@@ -43,9 +43,9 @@ class Scraper:
             print(ids)
 
         if ids:
-            # TODO temporary, replace with proper field submission via ui
-            self.id_count = len(ids)
-            fields = self.get_field_names()
+            self.ui.set_progress_max(len(ids))
+            #fields = self.get_field_names()
+            print(self.get_field_names())
             self.set_chosen_fields(fields)
             self.movies_data = self.get_movies(ids)
 
@@ -60,7 +60,8 @@ class Scraper:
             self.ui.alert_user('No IMDb IDs', 'The submitted data contains no potential IMDb IDs.')
 
     def export(self, fields, path):
-        self.file_handler.save_file(self.movies_data, fields, path)
+        print('Processing the rows')
+        self.file_handler.save_file(self.movies_data, fields, self.ui.update_progress, path)
 
     def get_id_count(self):
         return self.id_count

@@ -30,14 +30,14 @@ class CsvHandler(FileHandler):
 
         return ids
 
-    def save_file(self, data, fields, path='output.csv'):
+    def save_file(self, data, fields, notifier, path='output.csv'):
         """ Save the retrieved film data as a CSV at the path specified. """
         with open(path, 'w', newline='') as csv_output:
             writer = csv.DictWriter(csv_output, fieldnames=fields)
             writer.writeheader()
             for film in data:
                 writer.writerow(film)
-                print('Writing:', film['Title'])
+                notifier(film['Title'])
 
     def extract_ids(self, text):
         """ Identify all potential IDs from a block of text, return them as a set. """
