@@ -2,11 +2,12 @@ import tkinter as tk
 from pathlib import PurePath
 from tkinter import filedialog as fd, ttk, scrolledtext, END, messagebox
 
-
+# Configure UI
 LARGE_FONT = ('Verdana', 12)
 ICON = 'icon.icns'
 TITLE = 'ScraperApp'
-
+#CBS_PER_ROW = 3
+#SCALES_PER_ROW = 4
 
 class ScraperUI(tk.Tk):
     def __init__(self):
@@ -134,28 +135,26 @@ class InputPage(tk.Frame):
 
         # Scales
         # TODO dynamically create the scales from the available data
-        cast_default = 3
-        max_cast = tk.IntVar(lf_config, value=cast_default)
-        max_cast_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_cast, label='Max cast:', orient='horizontal')
-        max_cast_sb.pack(side='left', padx=5, pady=5, fill='both', expand='true')
+        scales = []
+        scale_configs = {
+            'Max cast:': {'min': 1, 'max': 9, 'default': 3},
+            'Max genres:': {'min': 1, 'max': 9, 'default': 3},
+            'Max languages:': {'min': 1, 'max': 9, 'default': 2},
+            'Max countries:': {'min': 1, 'max': 9, 'default': 3},
+        }
 
-        genres_default = 3
-        max_genres = tk.IntVar(lf_config, value=genres_default)
-        max_genres_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_genres, label='Max genres:',
-                                 orient='horizontal')
-        max_genres_sb.pack(side='left', padx=5, pady=5, fill='both', expand='true')
-
-        langs_default = 2
-        max_langs = tk.IntVar(lf_config, value=langs_default)
-        max_langs_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_langs, label='Max languages:',
-                                orient='horizontal')
-        max_langs_sb.pack(side='left', padx=5, pady=5, fill='both', expand='true')
-
-        countries_default = 3
-        max_countries = tk.IntVar(lf_config, value=countries_default)
-        max_countries_sb = tk.Scale(lf_config, from_=1, to=9, variable=max_countries, label='Max countries:',
-                                    orient='horizontal')
-        max_countries_sb.pack(side='left', padx=5, pady=5, fill='both', expand='true')
+        scales_per_row = 4
+        lf_config.grid_columnconfigure(0, weight=1)
+        lf_config.grid_columnconfigure(1, weight=1)
+        lf_config.grid_columnconfigure(2, weight=1)
+        lf_config.grid_columnconfigure(3, weight=1)
+        counter = 0
+        for text, config in scale_configs.items():
+            var = tk.IntVar(lf_config, value=config['default'])
+            scale = tk.Scale(lf_config, from_=config['min'], to=config['max'], variable=var, label=text, orient='horizontal')
+            row, column = divmod(counter, scales_per_row)
+            scale.grid(row=row, column=column, sticky='ew', padx=5, pady=5)
+            counter += 1
 
         # Navigation Buttons
         buttons_frame = tk.Frame(self)
