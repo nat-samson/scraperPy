@@ -10,7 +10,7 @@ class TestIMDbData(TestCase):
     def test_set_chosen_fields(self):
         choices = ['Title', 'URL']
         self.imdb.set_chosen_fields(choices)
-        expected = {'Title': self.imdb.get_title, 'URL': self.imdb.get_url}
+        expected = {'Title': self.imdb._get_title, 'URL': self.imdb.get_url}
         actual = self.imdb.chosen_fields
         self.assertDictEqual(expected, actual)
 
