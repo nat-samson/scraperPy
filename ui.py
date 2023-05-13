@@ -256,6 +256,7 @@ class ProgressPage(tk.Frame):
     def back(self):
         # TODO signal that the user intends to cancel
         print('Cancel!')
+        self.controller.scraper.cancelled = True
         self.progress_bar['value'] = 0
         self.txt.delete(1.0, END)
         self.controller.show_frame(InputPage)

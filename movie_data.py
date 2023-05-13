@@ -116,15 +116,15 @@ class IMDbData(MovieData):
     def _get_genres(cls, movie):
         genres = movie.get('genres')
         if genres:
-            return ' / '.join([g for g in genres][:cls.MAX_GENRES])
+            return ', '.join([g for g in genres][:cls.MAX_GENRES])
         else:
             return 'n/a'
 
     @classmethod
     def _get_synopsis(cls, movie):
-        synopsis = movie.get('synopsis')
+        synopsis = movie.get('plot outline')
         if synopsis:
-            return synopsis[0]
+            return synopsis
         else:
             return 'n/a'
 
