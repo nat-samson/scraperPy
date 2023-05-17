@@ -1,8 +1,6 @@
 from unittest import TestCase
 
-from imdb import Cinemagoer
-
-from scraper import extract_ids, get_title, get_movie, get_year, get_countries, get_director, get_cast, get_runtime, \
+from src.scraper import extract_ids, get_title, get_movie, get_year, get_countries, get_director, get_cast, get_runtime, \
     get_genres, get_rating, get_language, read_csv
 
 #ia = Cinemagoer()

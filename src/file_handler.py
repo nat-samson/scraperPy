@@ -1,14 +1,18 @@
 import csv
 import re
+from abc import ABC, abstractmethod
 
 
-class FileHandler:
+class FileHandler(ABC):
+    @abstractmethod
     def open_file(self, path):
         pass
 
+    @abstractmethod
     def save_file(self, data, fields, path):
         pass
 
+    @abstractmethod
     def extract_ids(self, text):
         pass
 
@@ -18,7 +22,7 @@ class CsvHandler(FileHandler):
         self.pattern = pattern
 
     def open_file(self, path):
-        """ Identify all potential IMDb IDs from anywhere within a CSV, return them as a set. """
+        """ Identify all potential IDs from anywhere within a CSV, return them as a set. """
         ids = set()
 
         with open(path, newline='') as csv_input:
@@ -31,12 +35,12 @@ class CsvHandler(FileHandler):
         return ids
 
     def save_file(self, data, fields, path='output.csv'):
-        """ Save the retrieved film data as a CSV at the path specified. """
+        """ Save the retrieved movie data as a CSV at the path specified. """
         with open(path, 'w', newline='') as csv_output:
             writer = csv.DictWriter(csv_output, fieldnames=fields)
             writer.writeheader()
-            for film in data:
-                writer.writerow(film)
+            for movie in data:
+                writer.writerow(movie)
 
     def extract_ids(self, text):
         """ Identify all potential IDs from a block of text, return them as a set. """

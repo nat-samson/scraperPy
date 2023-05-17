@@ -6,7 +6,6 @@ from pathlib import PurePath
 from tkinter import filedialog as fd, ttk, scrolledtext, END, messagebox
 
 # Configure UI
-LARGE_FONT = ('Verdana', 12)
 ICON = 'icon.icns'
 TITLE = 'ScraperApp'
 CBS_PER_ROW = 3
@@ -19,12 +18,11 @@ class ScraperUI(tk.Tk):
 
         # Holds a reference to a Scraper object (the controller)
         self.scraper = scraper
-        # TODO does this really need to be a stringvar
-        self.save_path = tk.StringVar()
+        self.save_path = None
 
         # TODO set icon
         tk.Tk.wm_title(self, TITLE)
-        self.minsize(380, 320)
+        self.minsize(350, 525)
 
         container = tk.Frame(self)
         container.pack(side='top', fill='both', expand=True)
@@ -35,7 +33,7 @@ class ScraperUI(tk.Tk):
         self.frames = {}
 
         # register all pages here
-        for f in (InputPage, ProgressPage, PageTwo):
+        for f in (InputPage, ProgressPage):
             frame = f(container, self)
             self.frames[f] = frame
             frame.grid(row=0, column=0, sticky='nsew')
@@ -56,13 +54,14 @@ class ScraperUI(tk.Tk):
         messagebox.showwarning(title=heading, message=txt, parent=self)
 
     def ask_to_save(self):
+        """ Prompt the user to choose a save location for the results. """
         save_path = fd.asksaveasfilename(defaultextension='.csv')
         if save_path:
             self.show_frame(ProgressPage)
-            self.save_path.set(value=save_path)
+            self.save_path = save_path
         return save_path
 
-    def set_progress_max(self, count):
+    def set_progress_bar_max(self, count):
         """ Set the maximum value of the progress bar using the count of IDs that are being fetched. """
         self.frames[ProgressPage].progress_bar['maximum'] = count
 
@@ -78,7 +77,6 @@ class ScraperUI(tk.Tk):
 
         if progress_bar['value'] == progress_bar['maximum']:
             response += '\n...DONE!'
-            #self.frames[ProgressPage].progress_label['text'] = 'All done!'
             self.frames[ProgressPage].open_button.pack(side='right')
 
         self.frames[ProgressPage].txt.insert(END, response)
@@ -94,9 +92,8 @@ class InputPage(tk.Frame):
 
         # LF: Input Data
         lf_input = tk.LabelFrame(self, text='Choose data source')
-        lf_input.pack(padx=15, pady=10, fill='both', expand='true')
+        lf_input.pack(padx=15, pady=10, fill='both', expand=True)
         lf_input.grid_rowconfigure(2, weight=1)
-        #lf.grid_columnconfigure(0, weight=1)
         lf_input.grid_columnconfigure(1, weight=1)
 
         # Radios
@@ -107,23 +104,21 @@ class InputPage(tk.Frame):
         self.radio_import.grid(row=0, column=0, ipady=5, padx=12, sticky='w')
         self.radio_paste.grid(row=1, column=0, ipady=5, padx=12, sticky='w')
 
-        open_csv_button = tk.Button(lf_input, text='Open CSV', command=self.select_file)
-        open_csv_button.grid(row=0, column=1, padx=5, sticky='w')
+        tk.Button(lf_input, text='Open CSV', command=self.select_file).grid(row=0, column=1, padx=5, sticky='w')
 
         self.open_path_label = tk.Label(lf_input)
         self.open_path_label.grid(row=0, column=2, sticky='e', padx=10)
 
         # Text Input
-        text_box = scrolledtext.ScrolledText(lf_input, width=50, height=8, wrap='word', borderwidth='2', relief='groove')
+        text_box = scrolledtext.ScrolledText(lf_input, width=50, height=8,
+                                             wrap='word', borderwidth='2', relief='groove')
         text_box.grid(row=2, column=0, columnspan=3, padx=10, pady=5, sticky='nsew')
 
-        # DYNAMIC UI ELEMENTS - Checkboxes and Scales
-        #fields = self.controller.scraper.get_field_names()
-        #scale_configs = self.controller.scraper.get_field_configs()
+        # SET UP DYNAMIC UI ELEMENTS - Checkboxes and Scales
 
         # LF: Select Data (Checkboxes)
         lf_select = tk.LabelFrame(self, text='Select data to extract')
-        lf_select.pack(padx=15, pady=10, fill='both', expand='false')
+        lf_select.pack(padx=15, pady=10, fill='both', expand=False)
         for column in range(CBS_PER_ROW):
             lf_select.grid_columnconfigure(column, weight=1)
 
@@ -137,7 +132,7 @@ class InputPage(tk.Frame):
 
         # LF: Configure Data (Scales)
         lf_config = tk.LabelFrame(self, text='Configure data')
-        lf_config.pack(padx=15, pady=10, fill='both', expand='false')
+        lf_config.pack(padx=15, pady=10, fill='both', expand=False)
         for column in range(SCALES_PER_ROW):
             lf_config.grid_columnconfigure(column, weight=1)
 
@@ -146,7 +141,8 @@ class InputPage(tk.Frame):
         for field, config in self.field_configs.items():
             if config:
                 var = tk.IntVar(lf_config, value=config['default'])
-                scale = tk.Scale(lf_config, from_=config['min'], to=config['max'], variable=var, label=config['label'], orient='horizontal')
+                scale = tk.Scale(lf_config, from_=config['min'], to=config['max'],
+                                 variable=var, label=config['label'], orient='horizontal')
                 scale_vals[field] = var
                 row, column = divmod(counter, SCALES_PER_ROW)
                 scale.grid(row=row, column=column, sticky='ew', padx=5, pady=5)
@@ -154,58 +150,44 @@ class InputPage(tk.Frame):
 
         # Navigation Buttons
         buttons_frame = tk.Frame(self)
-        buttons_frame.pack(padx=15, pady=10, fill='both', expand='false')
+        buttons_frame.pack(padx=15, pady=10, fill='both', expand=False)
 
-        self.reset_button = tk.Button(buttons_frame, text='Reset', command=lambda: self.reset(text_box, cb_vals, scale_vals))
-        self.reset_button.pack(side='left')
+        tk.Button(buttons_frame, text='Reset',
+                  command=lambda: self.reset(text_box, cb_vals, scale_vals)).pack(side='left')
 
-        self.cont_button = tk.Button(buttons_frame, text='Continue', command=lambda: self.cont(self.open_path, text_box, cb_vals, scale_vals))
-        self.cont_button.pack(side='right')
+        tk.Button(buttons_frame, text='Continue',
+                  command=lambda: self.validate_and_continue(text_box, cb_vals, scale_vals)
+                  ).pack(side='right')
 
     def select_file(self):
+        """ Prompt user to select a CSV file to open. """
         filetypes = [('CSV files', '*.csv')]
         self.open_path = fd.askopenfilename(title='Open CSV', filetypes=filetypes)
 
-        path_to_display = self.truncate_path(self.open_path)
+        path_to_display = truncate(self.open_path)
         self.open_path_label.config(text=path_to_display)
 
         # ensure the relevant radio is selected
         self.radio_import.invoke()
 
-    def truncate_path(self, path):
-        """ Shorten the filename as necessary so it fits neatly within the UI. """
-        max_length = 20
-        stem = PurePath(path).stem
-        if len(stem) > max_length:
-            diff = len(stem) - max_length
-            stem = f'{stem[:-diff]} [...] '
-
-        return stem + PurePath(path).suffix
-
-    def cont(self, path, text_box, cb_vals, scale_vals):
-        """ Ensure that the user has submitted some data, if so, continue to the next step. """
-        #TODO tidy this up, perhaps contain it as a request object
-
+    def validate_and_continue(self, text_box, cb_vals, scale_vals):
+        """Ensure that the user has submitted some data, if so, continue to the next step. """
         data = None
-        # check which checkboxes are ticked
-        fields = [val[0] for val in cb_vals if val[1].get()]
 
-        scales = {}
-        for scale, val in scale_vals.items():
-            scales[scale] = val.get()
+        # get selected checkboxes
+        selected_fields = [val[0] for val in cb_vals if val[1].get()]
+
+        # get current settings of the scales
+        scales = {scale: val.get() for scale, val in scale_vals.items()}
 
         if self.radio_var.get():
             data = text_box.get('1.0', 'end-1c')
-            self.controller.scraper.process(data, fields, scales)
+            self.controller.scraper.process(data, selected_fields, scales)
         else:
-            if path:
-                self.controller.scraper.process(data, fields, scales, path)
+            if self.open_path:
+                self.controller.scraper.process(data, selected_fields, scales, self.open_path)
             else:
-                # TODO this alert should be triggered by controller
                 self.controller.alert_user('No CSV specified.', 'No CSV specified.')
-
-    def get_save_path(self):
-        return fd.asksaveasfilename()
 
     def reset(self, textbox, cb_vals, scale_vals):
         """ Reset the UI back to its initial state, ready for the user to start over. """
@@ -230,33 +212,26 @@ class ProgressPage(tk.Frame):
 
         # LF: Progress
         lf_progress = tk.LabelFrame(self, text='Fetching data from IMDb... ')
-        lf_progress.pack(padx=15, pady=15, fill='both', expand='true')
+        lf_progress.pack(padx=15, pady=15, fill='both', expand=False)
 
         # Progress bar
         self.progress_bar = ttk.Progressbar(lf_progress, orient='horizontal', mode='determinate')
-        self.progress_bar.pack(padx=15, pady=15, fill='x', expand='false', side='top')
+        self.progress_bar.pack(padx=15, pady=15, fill='x', expand=False, side='top')
 
         # Textbox that visibly logs the progress
         self.txt = scrolledtext.ScrolledText(lf_progress, width=50, height=6, wrap='word', borderwidth='2',
                                              relief='groove')
-        self.txt.pack(padx=15, pady=15, fill='both', expand='true')
+        self.txt.pack(padx=15, pady=15, fill='both', expand=False)
 
         # Navigation Buttons
         buttons_frame = tk.Frame(self)
-        buttons_frame.pack(padx=15, pady=10, fill='both', expand='false')
+        buttons_frame.pack(padx=15, pady=10, fill='both', expand=False)
 
-        self.back_button = tk.Button(buttons_frame, text='Back', command=self.back)
-        self.back_button.pack(side='left')
-
-        self.progress_label = tk.Label(buttons_frame, text='', font=LARGE_FONT)
-        self.progress_label.pack(side='right')
-
+        tk.Button(buttons_frame, text='Back', command=self.back).pack(side='left')
         self.open_button = tk.Button(buttons_frame, text='Open Result...', command=self.open)
 
     def back(self):
-        # TODO signal that the user intends to cancel
-        print('Cancel!')
-        self.controller.scraper.cancelled = True
+        self.controller.scraper.cancel()
         self.progress_bar['value'] = 0
         self.txt.delete(1.0, END)
         self.controller.show_frame(InputPage)
@@ -264,7 +239,7 @@ class ProgressPage(tk.Frame):
 
     def open(self):
         """Open the file created by the application in the User's default application."""
-        path = self.controller.save_path.get()
+        path = self.controller.save_path
         if platform.system() == 'Darwin':  # macOS
             subprocess.call(('open', path))
         elif platform.system() == 'Windows':  # Windows
@@ -272,18 +247,13 @@ class ProgressPage(tk.Frame):
         else:  # linux variants
             subprocess.call(('xdg-open', path))
 
-        """if os.name == 'nt':
-            os.startfile(path)
-        else:
-            subprocess.call(('open', path))"""
 
-
-# PLACEHOLDERS FOR FURTHER PAGES
+# TEMPLATE FOR FURTHER PAGES
 
 class PageTwo(tk.Frame):
     def __init__(self, parent, controller, **kw):
         super().__init__(parent)
-        label = tk.Label(self, text='Page Two', font=LARGE_FONT)
+        label = tk.Label(self, text='Page Two')
         label.pack(pady=10, padx=10)
 
         button1 = ttk.Button(self, text='Back', command=lambda: controller.show_frame(InputPage))
@@ -293,14 +263,11 @@ class PageTwo(tk.Frame):
         button2.pack()
 
 
-class PageThree(tk.Frame):
-    def __init__(self, parent, controller, **kw):
-        super().__init__(parent)
-        label = tk.Label(self, text='Page Three', font=LARGE_FONT)
-        label.pack(pady=10, padx=10)
+def truncate(text, max_length=20):
+    """ Shorten the text so it fits neatly within the UI. """
+    stem = PurePath(text).stem
+    if len(stem) > max_length:
+        diff = len(stem) - max_length
+        stem = f'{stem[:-diff]} [...] '
 
-        button1 = ttk.Button(self, text='Back', command=lambda: controller.show_frame(InputPage))
-        button1.pack()
-
-        button2 = ttk.Button(self, text='Page One', command=lambda: controller.show_frame(ProgressPage))
-        button2.pack()
+    return stem + PurePath(text).suffix

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from movie_data import IMDbData
+from src.movie_data import IMDbData
 
 
 class TestIMDbData(TestCase):
