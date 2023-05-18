@@ -6,7 +6,7 @@ from pathlib import PurePath
 from tkinter import filedialog as fd, ttk, scrolledtext, END, messagebox
 
 # Configure UI
-ICON = 'icon.icns'
+#ICON = 'icon.icns'
 TITLE = 'ScraperApp'
 CBS_PER_ROW = 3
 SCALES_PER_ROW = 4
@@ -20,9 +20,10 @@ class ScraperUI(tk.Tk):
         self.scraper = scraper
         self.save_path = None
 
-        # TODO set icon
+        # Configure the main window
         tk.Tk.wm_title(self, TITLE)
         self.minsize(350, 525)
+        #self.iconbitmap(choose_icon())
 
         container = tk.Frame(self)
         container.pack(side='top', fill='both', expand=True)
@@ -212,7 +213,7 @@ class ProgressPage(tk.Frame):
 
         # LF: Progress
         lf_progress = tk.LabelFrame(self, text='Fetching data from IMDb... ')
-        lf_progress.pack(padx=15, pady=15, fill='both', expand=False)
+        lf_progress.pack(padx=15, pady=15, fill='both', expand=True)
 
         # Progress bar
         self.progress_bar = ttk.Progressbar(lf_progress, orient='horizontal', mode='determinate')
@@ -221,7 +222,7 @@ class ProgressPage(tk.Frame):
         # Textbox that visibly logs the progress
         self.txt = scrolledtext.ScrolledText(lf_progress, width=50, height=6, wrap='word', borderwidth='2',
                                              relief='groove')
-        self.txt.pack(padx=15, pady=15, fill='both', expand=False)
+        self.txt.pack(padx=15, pady=15, fill='both', expand=True)
 
         # Navigation Buttons
         buttons_frame = tk.Frame(self)
@@ -231,6 +232,7 @@ class ProgressPage(tk.Frame):
         self.open_button = tk.Button(buttons_frame, text='Open Result...', command=self.open)
 
     def back(self):
+        """Take user back to the main page, reset the progress so far, and interrupt the scraper if it is running."""
         self.controller.scraper.cancel()
         self.progress_bar['value'] = 0
         self.txt.delete(1.0, END)
@@ -240,9 +242,10 @@ class ProgressPage(tk.Frame):
     def open(self):
         """Open the file created by the application in the User's default application."""
         path = self.controller.save_path
-        if platform.system() == 'Darwin':  # macOS
+        user_os = platform.system()
+        if user_os == 'Darwin':  # macOS
             subprocess.call(('open', path))
-        elif platform.system() == 'Windows':  # Windows
+        elif user_os == 'Windows':  # Windows
             os.startfile(path)
         else:  # linux variants
             subprocess.call(('xdg-open', path))
@@ -271,3 +274,14 @@ def truncate(text, max_length=20):
         stem = f'{stem[:-diff]} [...] '
 
     return stem + PurePath(text).suffix
+
+
+def choose_icon():
+    user_os = platform.system()
+    if user_os == 'Darwin':
+        logo_image = 'images/logo.icns'
+    elif user_os == 'Windows':
+        logo_image = 'images/logo.ico'
+    else:
+        logo_image = 'images/logo.xbm'
+    return logo_image

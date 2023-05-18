@@ -7,10 +7,16 @@ class MovieData:
 
     @classmethod
     def _register_field(cls, method, name, config=None):
+        """Register an available field that can be used to query the data."""
+        # if a config is supplied, it must have min, max, default
+        if config and not all(c in config for c in ("min", "max", "default")):
+            raise RuntimeError(f"Configuration for '{name}' field is invalid. Must specify min, max and default.")
+
         cls.fields[name] = {'method': method, 'config': config}
 
     @classmethod
     def _unregister_field(cls, name):
+        """Remove a specified file from the list of available fields."""
         cls.fields.pop(name)
 
     @classmethod
@@ -51,7 +57,8 @@ class IMDbData(MovieData):
         self._register_field(self._get_director, 'Director')
         self._register_field(self._get_genres, 'Genres',
                              {'label': 'Max genres', 'default': self.MAX_GENRES, 'min': 1, 'max': 9})
-        self._register_field(self._get_synopsis, 'Synopsis')
+        self._register_field(self._get_short_synopsis, 'Synopsis (short)')
+        self._register_field(self._get_full_synopsis, 'Synopsis (long)')
         self._register_field(self._get_year, 'Year')
         self._register_field(self._get_countries, 'Countries',
                              {'label': 'Max countries', 'default': self.MAX_COUNTRIES, 'min': 1, 'max': 9})
@@ -60,7 +67,7 @@ class IMDbData(MovieData):
         self._register_field(self._get_runtime, 'Runtime')
         self._register_field(self._get_language, 'Language',
                              {'label': 'Max languages', 'default': self.MAX_LANGS, 'min': 1, 'max': 9})
-        self._register_field(self._get_rating, 'Rating')
+        self._register_field(self._get_rating, 'IMDb rating')
         self._register_field(self._get_imdb_id, 'IMDb ID')
         self._register_field(self._get_url, 'URL')
 
@@ -77,13 +84,6 @@ class IMDbData(MovieData):
 
     @classmethod
     def get_field_configs(cls):
-        """configs = {}
-        for field, field_data in cls.fields.items():
-            config = field_data.get('config')
-            if config:
-                configs[field] = config
-        configs = {field: field_data['config'] for field, field_data in cls.fields.items() if field_data.get('config')}
-        return configs"""
         return {field: field_data['config'] for field, field_data in cls.fields.items()}
 
     @classmethod
@@ -121,10 +121,22 @@ class IMDbData(MovieData):
             return 'n/a'
 
     @classmethod
-    def _get_synopsis(cls, movie):
-        synopsis = movie.get('plot outline')
+    def _get_short_synopsis(cls, movie):
+        outline = movie.get('plot outline')
+        if outline:
+            return outline
+        else:
+            outline = movie.get('plot')
+            if outline:
+                return outline[0]
+            else:
+                return 'n/a'
+
+    @classmethod
+    def _get_full_synopsis(cls, movie):
+        synopsis = movie.get('synopsis')
         if synopsis:
-            return synopsis
+            return synopsis[0]
         else:
             return 'n/a'
 
