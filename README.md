@@ -12,3 +12,8 @@
 ### Future development plans include:
 * Support more filetypes for importing IDs and exporting data.
 * Implement full dependency injection
+
+### Screenshots:
+
+<img src="https://github.com/nat-samson/scraperPy/assets/64223008/d5f159fa-5764-4bb0-9e62-baf2ade07b5e.png" width="500">
+<img src="https://github.com/nat-samson/scraperPy/assets/64223008/e75e9d97-8adb-4da3-9cea-9d8363d63fae.png" width="500">
